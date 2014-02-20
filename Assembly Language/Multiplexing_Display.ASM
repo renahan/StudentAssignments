@@ -1,0 +1,130 @@
+;ESLab3RRY.ASM   7/13/2011
+;Lab 2
+;Robert YEAGER
+
+; The objective of this lab was to count from 0-99 using the 8051 mircochip and display the count via 
+; multiplexed output on 7-segment displays
+
+ .EQU COUNT, 20H
+ .EQU SEG, 30H
+ .EQU PASS, 40H
+ .EQU INCOUNT, 45H
+
+ MOV COUNT, #00H	;Initialize Variables
+ MOV SEG, #00H
+ MOV PASS, #64H
+ MOV DPTR, #SEGTABLE  
+ MOV TMOD, #10H
+ 
+ MAIN:
+
+  PAUSE:
+
+	SETB P3.7	    ;PAUSE FUNCTION
+	
+	LCALL SEGOUT	    ;CALL SEGMENT OUTPUT ROUTINE
+
+	JNB P3.7, PAUSE
+
+ 	DJNZ PASS, MAIN     ;ONCE PASS DECREASES TO 
+
+ 	LCALL INCREMENT     ;CALL INCREMENT ROUTINE 	
+
+ 	MOV PASS, #64H      ;RESET PASS TO 100
+
+ 	SJMP MAIN           ;RETURN TO BEGINNING OF MAIN
+
+
+ SEGOUT:
+  
+  ;****************** LOAD PORT 1
+
+  CLR P3.2            ;TURN OFF 'TENS' SEGMENT
+  SETB P3.3	      ;TURN ON 'ONES' SEGMENT
+  MOV A, COUNT	      ;MOVE COUNT INTO ACCUM
+  ANL A, #0FH	      ;MASK COUNT VALUE TO DISPOSE OF UPPER BITS
+  MOVC A, @A+DPTR     ;INCREMENT ACCUM TO SELECT ITEM IN SEGTABLE
+  MOV P1, A	      ;MOVE ACCUM VALUE ONTO PORT 1
+
+  ;****************** DELAY
+
+  MOV TH1, #0ECH      ;SET TIMER1 UPPER BITS
+  MOV TL1, #77H       ;SET TIMER1 LOWER BITS
+  SETB TR1            ;START TIMER
+  DELAY1:
+   JNB TF1, DELAY1     ;WAIT FOR TIMER
+  CLR TR1             ;STOP TIMER1
+  CLR TF1	      ;CLR TIMER1 FLAG
+
+  ;****************** LOAD PORT 2
+
+  CLR P3.3            ;TURN OFF 'ONES' SEGMENT
+  SETB P3.2	      ;TURN ON 'TENS' SEGMENT
+  MOV A, COUNT        ;MOVE COUNT INTO ACCUM
+  SWAP A	      ;SWAP TO MANIPULATE MASK BITS TO GET 'TENS' PLACE DIGIT
+  ANL A, #0FH	      ;MASK UPPER BITS
+  MOVC A, @A+DPTR     ;INCREMENT ACCUM TO SELECT ITEM IN SEGTABLE
+  MOV P1, A	      ;MOVE ACCUM VALUE ONTO PORT 1
+
+  ;****************** ONE SECOND DELAY
+
+  MOV TH1, #0ECH
+  MOV TL1, #77H
+  SETB TR1
+  DELAY2:
+   JNB TF1, DELAY2
+  CLR TR1
+  CLR TF1
+  CLR P3.2            ;TURN OFF 'TENS' SEGMENT
+  CLR P3.3            ;TURN OFF 'ONES' SEGMENT
+  RET
+
+  ;****************** END SEGOUT
+
+
+ INCREMENT:
+
+  ;****************** INCREMENT COUNT 
+ 
+  MOV A, COUNT
+  ADD A, #01H
+  DA A 
+  MOV COUNT, A
+
+  RET
+
+  ;****************** END INCREMENT
+
+ SEGTABLE:
+  .DB 0C0H ; 0
+  .DB 0F9H ; 1
+  .DB 0A4H ; 2
+  .DB 0B0H ; 3
+  .DB 99H ; 4
+  .DB 92H ; 5
+  .DB 82H ; 6
+  .DB 0F8H ; 7
+  .DB 80H ; 8
+  .DB 90H ; 9
+
+ .END
+
+
+
+;LCALL TIMER	      ;CALL TIMER ROUTINE
+
+ TIMER:
+ 
+ ;*******************
+ 
+ MOV TH0, #3CH        ;SETTING UPPER BYTE OF LOADED VALUE
+   MOV TL0, #0AFH     ;SETTING LOWER BYTE OF LOADED VALUE
+   SETB TR0           ;START TIMER
+   DELAY:
+    JNB TF0, DELAY    ;IF FLAG IS SET STOP DELAY LOOP
+   CLR TR0            ; CLEAR FLAG TR0
+   CLR TF0            ; CLEAR FLAG TF0
+
+   RET
+
+ ;*******************

@@ -1,0 +1,45 @@
+; ESLab1RY.ASM   6/30/2011
+; Robert Yeager
+; Lab 1: 0-99 counter
+
+; The objective of this lab was to count from 0-99 using the 8051 microchip and 
+; display the count via a BCD encoder and 7-segment displays
+
+ START:
+
+ .EQU COUNT, 20H
+ .EQU PASS, 25H
+
+ 
+ MOV COUNT, #00H      ; INITIALIZE COUNTER TO ZERO
+ MOV	TMOD,	#01H  ;sets timer mode
+
+ LOOP1:
+   MOV P1, COUNT      ;LOAD COUNT TO P1 TO BE DISPLAYED
+
+   MOV PASS, #14H     ;RESET PASS
+  
+  LOOP2:
+   MOV TH0, #3CH      ;SETTING UPPER BYTE OF LOADED VALUE
+   MOV TL0, #0AFH     ;SETTING LOWER BYTE OF LOADED VALUE
+   SETB TR0           ;START TIMER
+   DELAY:
+    JNB TF0, DELAY    ;IF FLAG IS SET STOP DELAY LOOP
+   CLR TR0            ; CLEAR FLAG TR0
+   CLR TF0            ; CLEAR FLAG TF0
+
+PAUSE:
+    SETB P3.7	      ;SET PIN 0 OF PORT 3 TO 1
+    JNB P3.7, PAUSE   ;IF SWITCH IS NOT HIGH, LOOP
+
+ DJNZ PASS, LOOP2     ;IF PASS IS NOT EQUAL TO ZERO, JUMP TO LOOP 2
+ 
+ MOV A, COUNT         ;MOVE COUNTER INTO ACCUMULATOR
+  ADD A, #01H         ;INCREMENT COUNT VALUE
+  DA A		      ;DECIMAL ADJUST
+  MOV COUNT, A	      ;MOVE COUNTER TO ACCUM
+  
+ SJMP LOOP1	      ;JUMP TO LOOP 1
+
+ .END
+
